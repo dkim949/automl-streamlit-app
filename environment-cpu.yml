@@ -17,3 +17,5 @@ dependencies:
     - autokeras
     - keras-tuner
     - tpot
+    - pdpbox
+    - shap

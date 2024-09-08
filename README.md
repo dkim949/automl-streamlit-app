@@ -1,6 +1,18 @@
 # AutoML Visualization with Streamlit
 
-This project uses Streamlit to create an interactive web application for AutoML model selection, prediction, and result visualization.
+This project demonstrates the power of AutoML (Automated Machine Learning) using TPOT and Streamlit.
+
+## Overview
+
+![AutoML Streamlit App Screenshot](./images/automl_streamlit_screenshot_01.png)
+![AutoML Streamlit App Screenshot](./images/automl_streamlit_screenshot_02.png)
+
+This Streamlit application allows users to:
+- Select different datasets (e.g., California Housing, Diabetes)
+- Choose between regression and classification problems
+- Automatically find the best machine learning pipeline for the selected task
+- Visualize data and model results
+- Explore model explanations using various XAI (Explainable AI) techniques
 
 ## Features
 
