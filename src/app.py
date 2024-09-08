@@ -1,7 +1,17 @@
+import time
+import json
 import streamlit as st
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.metrics import (
+    r2_score,
+    mean_squared_error,
+    accuracy_score,
+    classification_report,
+)
+from sklearn.inspection import permutation_importance
 from sklearn.datasets import (
     load_diabetes,
     fetch_california_housing,
@@ -10,6 +20,8 @@ from sklearn.datasets import (
 )
 from sklearn.model_selection import train_test_split
 from tpot import TPOTRegressor, TPOTClassifier
+from pdpbox import pdp
+import shap
 
 # 제목 설정
 st.title("AutoML Streamlit App")
@@ -104,21 +116,96 @@ if st.button("Run AutoML"):
         X, y, test_size=0.2, random_state=42
     )
 
+    # 진행 상황 표시를 위한 플레이스홀더
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
     # AutoML 모델 훈련
+    start_time = time.time()
     if problem_type == "Regression":
         automl = TPOTRegressor(
-            generations=5, population_size=20, verbosity=2, random_state=42
+            generations=5,
+            population_size=20,
+            cv=5,
+            max_time_mins=5,
+            max_eval_time_mins=0.5,
+            verbosity=2,
+            random_state=42,
         )
-        automl.fit(X_train, y_train)
-        st.write("Best pipeline:", automl.fitted_pipeline_)
-        st.write("Score on test set:", automl.score(X_test, y_test))
-
-    elif problem_type == "Classification":
+    else:  # Classification
         automl = TPOTClassifier(
-            generations=5, population_size=20, verbosity=2, random_state=42
+            generations=5,
+            population_size=20,
+            cv=5,
+            max_time_mins=5,
+            max_eval_time_mins=0.5,
+            verbosity=2,
+            random_state=42,
         )
-        automl.fit(X_train, y_train)
-        st.write("Best pipeline:", automl.fitted_pipeline_)
-        st.write("Score on test set:", automl.score(X_test, y_test))
 
-# 추가적인 분석 로직을 여기에 추가할 수 있습니다.
+    # 훈련 진행 상황 업데이트
+    for i in range(10):
+        time.sleep(0.5)
+        progress_bar.progress(i * 10)
+        status_text.text(f"Training in progress... {i * 10}% complete")
+
+    automl.fit(X_train, y_train)
+
+    end_time = time.time()
+    training_time = end_time - start_time
+
+    # 결과 표시
+    progress_bar.progress(100)
+    status_text.text("Training complete!")
+    st.write(f"AutoML completed in {training_time:.2f} seconds")
+
+    st.write("### Model Summary")
+    st.write(f"Best pipeline: {automl.fitted_pipeline_}")
+
+    y_pred = automl.predict(X_test)
+
+    if problem_type == "Classification":
+        accuracy = accuracy_score(y_test, y_pred)
+        st.write(f"Accuracy on test set: {accuracy:.4f}")
+        st.write("Classification Report:")
+        st.code(classification_report(y_test, y_pred))
+
+        st.write("Interpretation:")
+        st.write(
+            "- Accuracy: Proportion of correct predictions (both true positives and true negatives) among the total number of cases examined."
+        )
+        st.write(
+            "- Precision: Ability of the classifier not to label as positive a sample that is negative."
+        )
+        st.write(
+            "- Recall: Ability of the classifier to find all the positive samples."
+        )
+        st.write("- F1-score: The harmonic mean of precision and recall.")
+
+    else:  # Regression
+        r2 = r2_score(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+
+        st.write(f"R-squared score on test set: {r2:.4f}")
+        st.write(f"Mean Squared Error (MSE) on test set: {mse:.4f}")
+        st.write(f"Root Mean Squared Error (RMSE) on test set: {rmse:.4f}")
+
+        st.write("Interpretation:")
+        st.write(
+            "- R-squared: Proportion of the variance in the dependent variable that is predictable from the independent variable(s). Ranges from 0 to 1, where 1 indicates perfect prediction."
+        )
+        st.write(
+            "- MSE: Average squared difference between the estimated values and the actual value."
+        )
+        st.write(
+            "- RMSE: Square root of MSE. It's in the same unit as the target variable and represents the standard deviation of the residuals."
+        )
+
+    # 간단한 특성 중요도 (가능한 경우)
+    if hasattr(automl.fitted_pipeline_[-1], "feature_importances_"):
+        st.write("### Top 5 Important Features")
+        importances = automl.fitted_pipeline_[-1].feature_importances_
+        feature_imp = pd.DataFrame({"feature": X.columns, "importance": importances})
+        feature_imp = feature_imp.sort_values("importance", ascending=False).head(5)
+        st.table(feature_imp)
