@@ -26,13 +26,38 @@ import shap
 # 제목 설정
 st.title("AutoML Streamlit App")
 
+# 데모 버전 설명 추가
+st.info(
+    """
+**Note: This is a demo version with limited model performance.**
+For the sake of faster execution and demonstration purposes:
+- The number of generations and population size in the genetic algorithm are reduced.
+- The maximum runtime for model search is restricted.
+- The complexity of explored models is limited.
+
+In a production environment, these constraints would be relaxed to potentially achieve better performance at the cost of longer computation time.
+"""
+)
+
+
 # 문제 유형 선택
 problem_type = st.selectbox("Select Problem Type", ["Regression", "Classification"])
 
 # 데이터셋 선택
 if problem_type == "Regression":
-    dataset = st.selectbox("Select Dataset", ["Diabetes", "California Housing"])
-    if dataset == "Diabetes":
+    dataset = st.selectbox("Select Dataset", ["California Housing", "Diabetes"])
+    if dataset == "California Housing":
+        data = fetch_california_housing()
+        df = pd.DataFrame(data.data, columns=data.feature_names)
+        target = pd.Series(data.target, name="MedHouseValue")
+        df = pd.concat([df, target], axis=1)
+        st.write("### California Housing Dataset")
+        st.write(df.head())
+        st.write(
+            "**Overview**: This dataset contains information about housing in California. The goal is to predict the median house value for California districts."
+        )
+
+    elif dataset == "Diabetes":
         data = load_diabetes()
         df = pd.DataFrame(data.data, columns=data.feature_names)
         target = pd.Series(data.target, name="Disease Progression")
@@ -43,16 +68,6 @@ if problem_type == "Regression":
             "**Overview**: This dataset contains information about diabetes patients. The goal is to predict a quantitative measure of disease progression one year after baseline."
         )
 
-    elif dataset == "California Housing":
-        data = fetch_california_housing()
-        df = pd.DataFrame(data.data, columns=data.feature_names)
-        target = pd.Series(data.target, name="MedHouseValue")
-        df = pd.concat([df, target], axis=1)
-        st.write("### California Housing Dataset")
-        st.write(df.head())
-        st.write(
-            "**Overview**: This dataset contains information about housing in California. The goal is to predict the median house value for California districts."
-        )
 
 elif problem_type == "Classification":
     dataset = st.selectbox("Select Dataset", ["Iris", "Breast Cancer"])
