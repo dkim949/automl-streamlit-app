@@ -32,9 +32,18 @@ This Streamlit application allows users to:
 
 To run this project, you need to install the required packages. You can do this by running:
 
-## Usage
+```bash
+conda env create -f environment-cpu.yml
+```
 
 Run the Streamlit app:
+
+```bash
+streamlit run src/app.py
+```
+
+Browser will automatically open and show the app(Otherwise, open browser and navigate to http://localhost:8501/).
+
 
 ## License
 
